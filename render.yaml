@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: lazarus-protocol
+    env: python
+    plan: standard
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: FLASK_ENV
+        value: production
+    autoDeploy: true
+    healthCheckPath: /
+
+  - type: redis
+    name: redis-cache
+    plan: standard
+
+  - type: pserv
+    name: celery-worker
+    env: python
+    plan: standard
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A app.celery worker --loglevel=info
+    envVars:
+      - key: CELERY_BROKER_URL
+        fromService:
+          name: redis-cache
+          property: connectionString
